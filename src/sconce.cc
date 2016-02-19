@@ -65,12 +65,16 @@ void sconce_init_lua_state(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 }
 
 int call_js_function(lua_State *L) {
-  Nan::Persistent<Function>* ptr = (Nan::Persistent<Function>*)lua_touserdata(L, lua_upvalueindex(1));  /* get upvalue */
+  int n_args = lua_gettop(L);
+  printf("n_args = %d\n", n_args);
 
-  v8::Local<v8::Function> f = Nan::New(*ptr);
-  Nan::Callback callback(f);
+  // Get JS function from upvalue
+  Nan::Callback* callback = (Nan::Callback*)lua_touserdata(L, lua_upvalueindex(1));
 
-  lua_pushnumber(L, callback.Call(0, NULL)->NumberValue());  /* push result */
+  v8::Local<v8::Value> argv[] = {Nan::New(lua_tonumber(L, 1))};
+
+  lua_pushnumber(L, callback->Call(1, argv)->NumberValue());  /* push result */
+
   return 1;  /* number of results */
 }
 
@@ -87,10 +91,11 @@ void sconce_define_function(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
   Nan::Utf8String function_name(info[1].As<Object>());
 
-  // TODO: Ensure that this is not collected at some point
-  Nan::Persistent<Function> persistent(info[2].As<Function>());
+  Local<Function> callbackHandle = info[2].As<Function>();
+  Nan::Callback* callback = new Nan::Callback(callbackHandle);
+  // TODO: Store this pointer in ss and later delete with "delete callback;"
 
-  lua_pushlightuserdata(ss->L, &persistent);
+  lua_pushlightuserdata(ss->L, callback);
   lua_pushcclosure(ss->L, call_js_function, 1);
   lua_setglobal(ss->L, *function_name);
 }
