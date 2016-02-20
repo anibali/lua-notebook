@@ -1,3 +1,3 @@
 #!/bin/bash
 
-node-gyp rebuild && node --use-strict --expose-gc index.js
+node-gyp rebuild && node --use-strict --expose-gc src/sconce.js

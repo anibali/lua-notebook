@@ -1,12 +1,12 @@
 {
   "targets": [
     {
-      "target_name": "sconce",
+      "target_name": "lua-node",
       "variables": {
-        "lua_include": "<!(find /usr/include /usr/local/include $NODELUA_INCLUDE -name lua.h | sed s/lua.h//)"
+        "lua_include": "<!(find /usr/include /usr/local/include -name lua.h | sed s/lua.h//)"
       },
       "sources": [
-        "src/sconce.cc"
+        "ext/lua-node.cc"
       ],
       "include_dirs": [
         "<@(lua_include)",

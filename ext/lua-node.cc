@@ -36,49 +36,37 @@ bool check_number_of_args(const Nan::FunctionCallbackInfo<v8::Value>& info, int 
 typedef struct {
   lua_State* L;
   vector<Nan::Callback*> callbacks;
-} Sconce_State;
+} Lua_Node_State;
 
-void destroy_sconce_state(char *data, void *hint) {
-  Sconce_State* ss = (Sconce_State*)data;
+static void destroy_lua_node_state(char *data, void *hint) {
+  Lua_Node_State* state = (Lua_Node_State*)data;
 
   // Close Lua state if present
-  if(ss->L) {
-    lua_close(ss->L);
-    ss->L = NULL;
+  if(state->L) {
+    lua_close(state->L);
+    state->L = NULL;
   }
 
   // Allow callbacks to be GC'd by V8
-  for(auto it = ss->callbacks.begin(); it != ss->callbacks.end(); it++) {
+  for(auto it = state->callbacks.begin(); it != state->callbacks.end(); it++) {
     delete *it;
   }
-  ss->callbacks.clear();
+  state->callbacks.clear();
 
   free(data);
 }
 
-void sconce_new(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+void ln_new(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   if(!check_number_of_args(info, 0)) return;
 
-  Sconce_State* ss = (Sconce_State*)calloc(1, sizeof(Sconce_State));
+  Lua_Node_State* state = (Lua_Node_State*)calloc(1, sizeof(Lua_Node_State));
   Local<Object> buffer =
-    Nan::NewBuffer((char*)ss, sizeof(Sconce_State), destroy_sconce_state, NULL).ToLocalChecked();
+    Nan::NewBuffer((char*)state, sizeof(Lua_Node_State), destroy_lua_node_state, NULL).ToLocalChecked();
+
+  state->L = luaL_newstate();
+  luaL_openlibs(state->L);
 
   info.GetReturnValue().Set(buffer);
-}
-
-void sconce_init_lua_state(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  if(!check_number_of_args(info, 1)) return;
-
-  if(!info[0]->IsObject()) {
-    Nan::ThrowTypeError("Wrong argument type(s)");
-    return;
-  }
-
-  Local<Object> buffer = info[0]->ToObject();
-  Sconce_State* ss = (Sconce_State*)node::Buffer::Data(buffer);
-
-  ss->L = luaL_newstate();
-  luaL_openlibs(ss->L);
 }
 
 // Retrieves a Lua value from the Lua stack and converts it into a JS value
@@ -158,7 +146,7 @@ int call_js_function(lua_State *L) {
   return 1;
 }
 
-void sconce_define_function(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+void ln_define_global_function(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   if(!check_number_of_args(info, 3)) return;
 
   if(!info[0]->IsObject() || !info[1]->IsString() || !info[2]->IsFunction()) {
@@ -167,17 +155,17 @@ void sconce_define_function(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   }
 
   Local<Object> buffer = info[0]->ToObject();
-  Sconce_State* ss = (Sconce_State*)node::Buffer::Data(buffer);
+  Lua_Node_State* state = (Lua_Node_State*)node::Buffer::Data(buffer);
 
   Nan::Utf8String function_name(info[1].As<Object>());
 
   Local<Function> callbackHandle = info[2].As<Function>();
   Nan::Callback* callback = new Nan::Callback(callbackHandle);
-  ss->callbacks.push_back(callback);
+  state->callbacks.push_back(callback);
 
-  lua_pushlightuserdata(ss->L, callback);
-  lua_pushcclosure(ss->L, call_js_function, 1);
-  lua_setglobal(ss->L, *function_name);
+  lua_pushlightuserdata(state->L, callback);
+  lua_pushcclosure(state->L, call_js_function, 1);
+  lua_setglobal(state->L, *function_name);
 }
 
 static int errfunc(lua_State *L) {
@@ -185,7 +173,7 @@ static int errfunc(lua_State *L) {
   return 1;
 }
 
-void sconce_eval(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+void ln_eval(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   if(!check_number_of_args(info, 2)) return;
 
   if(!info[0]->IsObject() || !info[1]->IsString()) {
@@ -194,15 +182,15 @@ void sconce_eval(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   }
 
   Local<Object> buffer = info[0]->ToObject();
-  Sconce_State* ss = (Sconce_State*)node::Buffer::Data(buffer);
+  Lua_Node_State* state = (Lua_Node_State*)node::Buffer::Data(buffer);
 
   Nan::Utf8String code(info[1].As<Object>());
 
-  lua_pushcfunction(ss->L, errfunc);
-  bool is_error = luaL_loadstring(ss->L, *code) || lua_pcall(ss->L, 0, LUA_MULTRET, 1);
+  lua_pushcfunction(state->L, errfunc);
+  bool is_error = luaL_loadstring(state->L, *code) || lua_pcall(state->L, 0, LUA_MULTRET, 1);
 
   if(is_error) {
-    info.GetReturnValue().Set(Nan::New(lua_tostring(ss->L, -1)).ToLocalChecked());
+    info.GetReturnValue().Set(Nan::New(lua_tostring(state->L, -1)).ToLocalChecked());
   } else {
     info.GetReturnValue().Set(Nan::Undefined());
   }
@@ -250,10 +238,9 @@ void init(Handle<Object> exports) {
   set_prop(lua_version, "release", LUA_VERSION_RELEASE);
 
   set_prop(exports, "lua_version", lua_version);
-  set_prop(exports, "sconce_new", to_v8_function(sconce_new));
-  set_prop(exports, "sconce_init_lua_state", to_v8_function(sconce_init_lua_state));
-  set_prop(exports, "sconce_define_function", to_v8_function(sconce_define_function));
-  set_prop(exports, "sconce_eval", to_v8_function(sconce_eval));
+  set_prop(exports, "new", to_v8_function(ln_new));
+  set_prop(exports, "define_global_function", to_v8_function(ln_define_global_function));
+  set_prop(exports, "eval", to_v8_function(ln_eval));
 }
 
 NODE_MODULE(sconce, init)
