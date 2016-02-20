@@ -64,52 +64,76 @@ void sconce_init_lua_state(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   luaL_openlibs(ss->L);
 }
 
+// Retrieves a Lua value from the Lua stack and converts it into a JS value
+static Nan::MaybeLocal<Value> lua_to_js_value(lua_State *L, int index) {
+  switch(lua_type(L, index)) {
+    case LUA_TNIL: {
+      return Nan::Undefined();
+      break;
+    };
+
+    case LUA_TNUMBER: {
+      return Nan::New(lua_tonumber(L, index));
+    } break;
+
+    case LUA_TBOOLEAN: {
+      return Nan::New(lua_toboolean(L, index) ? true : false);
+    } break;
+
+    case LUA_TSTRING: {
+      auto maybe_string = Nan::New(lua_tostring(L, index));
+      if(maybe_string.IsEmpty()) {
+        return Nan::MaybeLocal<Value>();
+      } else {
+        return maybe_string.ToLocalChecked();
+      }
+    } break;
+
+    default: {
+      return Nan::MaybeLocal<Value>();
+    }
+  }
+}
+
+// Converts a JS value into a Lua value and pushes it onto the Lua stack
+static bool js_to_lua_value(lua_State *L, Local<Value> js_value) {
+  if(js_value->IsUndefined() || js_value->IsNull()) {
+    lua_pushnil(L);
+  } else if(js_value->IsNumber()) {
+    lua_pushnumber(L, js_value->NumberValue());
+  } else if(js_value->IsBoolean()) {
+    lua_pushboolean(L, js_value->BooleanValue() ? 1 : 0);
+  } else if(js_value->IsString()) {
+    Nan::Utf8String string_result(js_value);
+    lua_pushstring(L, *string_result);
+  } else {
+    return false;
+  }
+
+  return true;
+}
+
 int call_js_function(lua_State *L) {
   int n_args = lua_gettop(L);
-  printf("n_args = %d\n", n_args);
 
   // Get JS function from upvalue
   Nan::Callback* callback = (Nan::Callback*)lua_touserdata(L, lua_upvalueindex(1));
 
+  // Convert args Lua->JS
   Local<Value> argv[n_args];
-
   for(int i = 1; i <= n_args; ++i) {
-    switch(lua_type(L, i)) {
-      case LUA_TNIL: {
-        argv[i - 1] = Nan::Undefined();
-        break;
-      };
-
-      case LUA_TNUMBER: {
-        argv[i - 1] = Nan::New(lua_tonumber(L, i));
-      } break;
-
-      case LUA_TBOOLEAN: {
-        argv[i - 1] = Nan::New(lua_toboolean(L, i) ? true : false);
-      } break;
-
-      case LUA_TSTRING: {
-        argv[i - 1] = Nan::New(lua_tostring(L, i)).ToLocalChecked();
-      } break;
-
-      default: {
-        return luaL_error(L, "[SCONCE] Unsupported arg type");
-      }
+    Nan::MaybeLocal<Value> value = lua_to_js_value(L, i);
+    if(value.IsEmpty()) {
+      return luaL_error(L, "[SCONCE] Unsupported arg type");
     }
+    argv[i - 1] = value.ToLocalChecked();
   }
 
+  // Call the JS function
   Local<Value> result = callback->Call(n_args, argv);
 
-  if(result->IsUndefined() || result->IsNull()) {
-    lua_pushnil(L);
-  } else if(result->IsNumber()) {
-    lua_pushnumber(L, result->NumberValue());
-  } else if(result->IsBoolean()) {
-    lua_pushboolean(L, result->BooleanValue() ? 1 : 0);
-  } else if(result->IsString()) {
-    Nan::Utf8String string_result(result);
-    lua_pushstring(L, *string_result);
-  } else {
+  // Convert result JS->Lua
+  if(!js_to_lua_value(L, result)) {
     return luaL_error(L, "[SCONCE] Unsupported return type");
   }
 
