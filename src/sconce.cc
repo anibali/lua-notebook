@@ -71,11 +71,50 @@ int call_js_function(lua_State *L) {
   // Get JS function from upvalue
   Nan::Callback* callback = (Nan::Callback*)lua_touserdata(L, lua_upvalueindex(1));
 
-  v8::Local<v8::Value> argv[] = {Nan::New(lua_tonumber(L, 1))};
+  Local<Value> argv[n_args];
 
-  lua_pushnumber(L, callback->Call(1, argv)->NumberValue());  /* push result */
+  for(int i = 1; i <= n_args; ++i) {
+    switch(lua_type(L, i)) {
+      case LUA_TNIL: {
+        argv[i - 1] = Nan::Undefined();
+        break;
+      };
 
-  return 1;  /* number of results */
+      case LUA_TNUMBER: {
+        argv[i - 1] = Nan::New(lua_tonumber(L, i));
+      } break;
+
+      case LUA_TBOOLEAN: {
+        argv[i - 1] = Nan::New(lua_toboolean(L, i) ? true : false);
+      } break;
+
+      case LUA_TSTRING: {
+        argv[i - 1] = Nan::New(lua_tostring(L, i)).ToLocalChecked();
+      } break;
+
+      default: {
+        return luaL_error(L, "[SCONCE] Unsupported arg type");
+      }
+    }
+  }
+
+  Local<Value> result = callback->Call(n_args, argv);
+
+  if(result->IsUndefined() || result->IsNull()) {
+    lua_pushnil(L);
+  } else if(result->IsNumber()) {
+    lua_pushnumber(L, result->NumberValue());
+  } else if(result->IsBoolean()) {
+    lua_pushboolean(L, result->BooleanValue() ? 1 : 0);
+  } else if(result->IsString()) {
+    Nan::Utf8String string_result(result);
+    lua_pushstring(L, *string_result);
+  } else {
+    return luaL_error(L, "[SCONCE] Unsupported return type");
+  }
+
+  // Return number of results
+  return 1;
 }
 
 void sconce_define_function(const Nan::FunctionCallbackInfo<v8::Value>& info) {
