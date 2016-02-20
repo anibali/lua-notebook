@@ -13,15 +13,10 @@ const MessageItem = (m) => {
   );
 };
 
-const CellList = React.createClass({
+const Cell = React.createClass({
   // Display name for the component (useful for debugging)
-  displayName: 'CellList',
+  displayName: 'Cell',
 
-  getInitialState: function() {
-    return { code: this.props.cells[0].code };
-  },
-
-  // Describe how to render the component
   render: function() {
     const onChange = (newValue) => {
       this.setState({ code: newValue });
@@ -39,13 +34,13 @@ const CellList = React.createClass({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          code: this.state.code
+          code: this.props.code
         })
       });
     };
 
     return (
-      <div style={{ paddingTop: '16px' }}>
+      <div>
         <AceEditor
           width="100%"
           fontSize={16}
@@ -55,10 +50,28 @@ const CellList = React.createClass({
           onChange={onChange}
           onLoad={onLoad}
           name="UNIQUE_ID_OF_DIV"
-          value={this.state.code}
+          value={this.props.code}
           editorProps={{ $blockScrolling: true }}
         />
         <a className="btn btn-primary" role="button" onClick={onClick}>Eval</a>
+      </div>
+    );
+  }
+});
+
+const CellList = React.createClass({
+  // Display name for the component (useful for debugging)
+  displayName: 'CellList',
+
+  getInitialState: function() {
+    return { code: this.props.cells[0].code };
+  },
+
+  // Describe how to render the component
+  render: function() {
+    return (
+      <div style={{ paddingTop: '16px' }}>
+        <Cell code={this.state.code} />
         {this.props.messages.map(MessageItem)}
       </div>
     );
