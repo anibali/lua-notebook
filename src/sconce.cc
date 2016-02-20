@@ -1,8 +1,10 @@
 #include <nan.h>
 
 #include <string.h>
+#include <vector>
 
 using namespace v8;
+using namespace std;
 
 extern "C" {
   #include <lua.h>
@@ -23,6 +25,7 @@ bool check_number_of_args(const Nan::FunctionCallbackInfo<v8::Value>& info, int 
 
 typedef struct {
   lua_State* L;
+  vector<Nan::Callback*> callbacks;
 } Sconce_State;
 
 void destroy_sconce_state(char *data, void *hint) {
@@ -34,9 +37,13 @@ void destroy_sconce_state(char *data, void *hint) {
     ss->L = NULL;
   }
 
-  free(data);
+  // Allow callbacks to be GC'd by V8
+  for(auto it = ss->callbacks.begin(); it != ss->callbacks.end(); it++) {
+    delete *it;
+  }
+  ss->callbacks.clear();
 
-  printf("DESTROYED\n");
+  free(data);
 }
 
 void sconce_new(const Nan::FunctionCallbackInfo<v8::Value>& info) {
@@ -156,7 +163,7 @@ void sconce_define_function(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
   Local<Function> callbackHandle = info[2].As<Function>();
   Nan::Callback* callback = new Nan::Callback(callbackHandle);
-  // TODO: Store this pointer in ss and later delete with "delete callback;"
+  ss->callbacks.push_back(callback);
 
   lua_pushlightuserdata(ss->L, callback);
   lua_pushcclosure(ss->L, call_js_function, 1);
