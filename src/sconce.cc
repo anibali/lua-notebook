@@ -12,6 +12,16 @@ extern "C" {
   #include <lualib.h>
 }
 
+template<typename T>
+static Nan::MaybeLocal<T> wrap_maybe_local(Local<T> l) {
+  return Nan::MaybeLocal<T>(l);
+}
+
+template<typename T>
+static Nan::MaybeLocal<T> wrap_maybe_local(Nan::MaybeLocal<T> l) {
+  return l;
+}
+
 bool check_number_of_args(const Nan::FunctionCallbackInfo<v8::Value>& info, int n_args) {
   if(info.Length() != n_args) {
     char msg[100];
@@ -170,6 +180,11 @@ void sconce_define_function(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   lua_setglobal(ss->L, *function_name);
 }
 
+static int errfunc(lua_State *L) {
+  luaL_traceback(L, L, lua_tostring(L, 1), 0);
+  return 1;
+}
+
 void sconce_eval(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   if(!check_number_of_args(info, 2)) return;
 
@@ -183,30 +198,62 @@ void sconce_eval(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
   Nan::Utf8String code(info[1].As<Object>());
 
-  luaL_dostring(ss->L, *code);
+  lua_pushcfunction(ss->L, errfunc);
+  bool is_error = luaL_loadstring(ss->L, *code) || lua_pcall(ss->L, 0, LUA_MULTRET, 1);
+
+  if(is_error) {
+    info.GetReturnValue().Set(Nan::New(lua_tostring(ss->L, -1)).ToLocalChecked());
+  } else {
+    info.GetReturnValue().Set(Nan::Undefined());
+  }
+}
+
+template<typename K, typename V>
+static void set_prop(Handle<Object> obj, Local<K> key, Local<V> value) {
+  obj->Set(
+    Nan::MaybeLocal<K>(key).ToLocalChecked(),
+    Nan::MaybeLocal<V>(value).ToLocalChecked());
+}
+
+template<typename K, typename V>
+static void set_prop(Handle<Object> obj, K key, Local<V> value) {
+  set_prop(obj,
+    wrap_maybe_local(Nan::New(key)).ToLocalChecked(),
+    value);
+}
+
+template<typename K, typename V>
+static void set_prop(Handle<Object> obj, Local<K> key, V value) {
+  set_prop(obj,
+    key,
+    wrap_maybe_local(Nan::New(value)).ToLocalChecked());
+}
+
+template<typename K, typename V>
+static void set_prop(Handle<Object> obj, K key, V value) {
+  set_prop(obj,
+    wrap_maybe_local(Nan::New(key)).ToLocalChecked(),
+    wrap_maybe_local(Nan::New(value)).ToLocalChecked());
+
+}
+
+template<typename F>
+static Local<Function> to_v8_function(F func) {
+  return Nan::New<FunctionTemplate>(func)->GetFunction();
 }
 
 void init(Handle<Object> exports) {
-  exports->Set(Nan::New("LUA_VERSION_MAJOR").ToLocalChecked(),
-    Nan::New(LUA_VERSION_MAJOR).ToLocalChecked());
+  auto lua_version = Nan::New<Object>();
 
-  exports->Set(Nan::New("LUA_VERSION_MINOR").ToLocalChecked(),
-    Nan::New(LUA_VERSION_MINOR).ToLocalChecked());
+  set_prop(lua_version, "major", LUA_VERSION_MAJOR);
+  set_prop(lua_version, "minor", LUA_VERSION_MINOR);
+  set_prop(lua_version, "release", LUA_VERSION_RELEASE);
 
-  exports->Set(Nan::New("LUA_VERSION_RELEASE").ToLocalChecked(),
-    Nan::New(LUA_VERSION_RELEASE).ToLocalChecked());
-
-  exports->Set(Nan::New("sconce_new").ToLocalChecked(),
-               Nan::New<FunctionTemplate>(sconce_new)->GetFunction());
-
-  exports->Set(Nan::New("sconce_init_lua_state").ToLocalChecked(),
-               Nan::New<FunctionTemplate>(sconce_init_lua_state)->GetFunction());
-
-  exports->Set(Nan::New("sconce_define_function").ToLocalChecked(),
-               Nan::New<FunctionTemplate>(sconce_define_function)->GetFunction());
-
-  exports->Set(Nan::New("sconce_eval").ToLocalChecked(),
-               Nan::New<FunctionTemplate>(sconce_eval)->GetFunction());
+  set_prop(exports, "lua_version", lua_version);
+  set_prop(exports, "sconce_new", to_v8_function(sconce_new));
+  set_prop(exports, "sconce_init_lua_state", to_v8_function(sconce_init_lua_state));
+  set_prop(exports, "sconce_define_function", to_v8_function(sconce_define_function));
+  set_prop(exports, "sconce_eval", to_v8_function(sconce_eval));
 }
 
 NODE_MODULE(sconce, init)
