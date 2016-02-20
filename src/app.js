@@ -1,5 +1,6 @@
 const path = require('path');
 const express = require('express');
+const threads = require('threads');
 
 // Create a new Express app
 const app = express();
@@ -26,7 +27,7 @@ app.get('/', (req, res) => {
         <link rel="stylesheet" type="text/css" href="/assets/css/app.css">
       </head>
       <body>
-        <div id="root"></div>
+        <div class="container" id="root"></div>
         <script src="/assets/js/vendor.js"></script>
         <script src="/assets/js/app.js"></script>
         <script>main(${JSON.stringify(initalState)})</script>
@@ -37,22 +38,20 @@ app.get('/', (req, res) => {
   res.send(htmlContent);
 });
 
-const threads = require('threads');
+const kernel = threads.spawn('src/kernel.js')
 
-const thread = threads.spawn('src/kernel.js')
-
-thread.on('message', (msg) => {
-  console.log(msg);
+kernel.on('message', (msg) => {
+  msg.id = messages.length + 1
   messages.push(msg);
-  // thread.kill();
+  // kernel.kill();
 });
 
-thread.send({ type: 'eval', data: `
+kernel.send({ type: 'eval', data: `
 local i = 1
 while true do
-  display_html('Hi #' .. i)
+  display_html('<strong>Hi #' .. i .. '</strong>')
   i = i + 1
-  os.execute('sleep 2')
+  os.execute('sleep 4')
 end
 ` });
 

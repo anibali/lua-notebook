@@ -8,6 +8,7 @@ const clean = require('gulp-clean');
 const concat = require('gulp-concat');
 const babelify = require('babelify');
 const concatCss = require('gulp-concat-css');
+const merge = require('ordered-merge-stream');
 
 // List of npm modules to bundle separately from our application code
 const libs = [
@@ -21,7 +22,10 @@ const libs = [
 // Information about where project files are located
 const paths = {
   scriptEntryPoint: 'src/client.js',
-  styles: 'src/styles/**/*.css'
+  styles: 'src/styles/**/*.css',
+  vendorStyles: [
+    require.resolve('bootstrap/dist/css/bootstrap.css')
+  ]
 };
 
 // Error handler
@@ -56,7 +60,7 @@ gulp.task('cleanVendorScripts', () => {
 
 // Task to bundle up styles
 gulp.task('styles', ['cleanStyles'], () => {
-  return gulp.src(paths.styles)
+  return merge([gulp.src(paths.vendorStyles), gulp.src(paths.styles)])
     .pipe(concatCss('app.css'))
     .on('error', onError)
     .pipe(gulp.dest('dist/css/'));
