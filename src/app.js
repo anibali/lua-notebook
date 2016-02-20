@@ -20,7 +20,7 @@ const messages = [];
 // Set up the root route
 app.get('/', (req, res) => {
   const initalState = {
-    messages: messages
+    messages
   };
 
   // The HTML is pretty barebones, it just provides a mount point
@@ -43,10 +43,10 @@ app.get('/', (req, res) => {
   res.send(htmlContent);
 });
 
-const kernel = threads.spawn('src/kernel.js')
+const kernel = threads.spawn('src/kernel.js');
 
 kernel.on('message', (msg) => {
-  msg.id = messages.length + 1
+  msg.id = messages.length + 1;
   messages.push(msg);
   // kernel.kill();
 });

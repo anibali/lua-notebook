@@ -3,13 +3,13 @@ const ln = require('../build/Release/lua-node');
 const state = ln.new();
 
 const main = (input, done) => {
-  input = input || {}
+  input = input || {};
 
-  const display_html = (html_string) => {
-    done({ type: 'display_html', data: html_string });
+  const displayHtml = (htmlString) => {
+    done({ type: 'display_html', data: htmlString });
   };
 
-  ln.define_global_function(state, 'display_html', display_html);
+  ln.define_global_function(state, 'display_html', displayHtml);
 
   switch(input.type) {
     case 'eval': {
@@ -17,6 +17,10 @@ const main = (input, done) => {
       if(err) {
         done({ type: 'error', data: err });
       }
+    } break;
+
+    default: {
+      console.error('Unrecognised kernel thread input message');
     } break;
   }
 };
