@@ -1,14 +1,19 @@
 const path = require('path');
 const express = require('express');
 const threads = require('threads');
+const bodyParser = require('body-parser');
 
 // Create a new Express app
 const app = express();
+
+app.use(bodyParser.json());
 
 // Serve up our static assets from 'dist' (this includes our client-side
 // bundle of JavaScript). These assets are referred to in the HTML using
 // <link> and <script> tags.
 app.use('/assets', express.static(path.resolve(__dirname, '..', 'dist')));
+
+require('./config/routes').connect(app);
 
 const messages = [];
 
@@ -46,14 +51,7 @@ kernel.on('message', (msg) => {
   // kernel.kill();
 });
 
-kernel.send({ type: 'eval', data: `
-local i = 1
-while true do
-  display_html('<strong>Hi #' .. i .. '</strong>')
-  i = i + 1
-  os.execute('sleep 4')
-end
-` });
+global.kernel = kernel;
 
 // Export the Express app
 module.exports = app;

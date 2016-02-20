@@ -12,10 +12,15 @@ const merge = require('ordered-merge-stream');
 
 // List of npm modules to bundle separately from our application code
 const libs = [
+  'brace',
+  'brace/mode/lua',
+  'brace/theme/monokai',
+  'whatwg-fetch',
+  'react-ace',
   'react',
   'react-dom',
-  // 'redux',
-  // 'react-redux',
+  'redux',
+  'react-redux',
   'lodash'
 ];
 
