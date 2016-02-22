@@ -1,3 +1,7 @@
+const _ = require('lodash');
+
+const CHANGE_CODE = Symbol('sconce/cellList/CHANGE_CODE');
+
 // The initial state is filled with some dummy data for debugging purposes
 const initialState = {
   cells: [
@@ -12,10 +16,25 @@ function reducer(state, action) {
   action = action || {};
 
   switch(action.type) {
+    case CHANGE_CODE: {
+      const cells = _.mapValues(state.cells, (cell) => {
+        if(cell.id === action.cellId) {
+          return _.assign({}, cell, { code: action.code });
+        } else {
+          return cell;
+        }
+      });
+      return _.assign({}, state, { cells });
+    }
+
     default: return state;
   }
 
   throw new Error('Reducer switch statement should always return');
+}
+
+reducer.changeCode = (cellId, code) => {
+  return { type: CHANGE_CODE, cellId, code };
 }
 
 module.exports = reducer;

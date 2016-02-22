@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const React = require('react');
 const ReactRedux = require('react-redux');
 
@@ -6,6 +7,8 @@ require('brace/mode/lua');
 require('brace/theme/monokai');
 
 const AceEditor = require('react-ace');
+
+const cellListActionCreators = require('../reducers/cellList');
 
 const MessageItem = (m) => {
   return (
@@ -18,10 +21,6 @@ const Cell = React.createClass({
   displayName: 'Cell',
 
   render: function() {
-    const onChange = (newValue) => {
-      this.setState({ code: newValue });
-    };
-
     const onLoad = (editor) => {
       editor.setShowInvisibles(true);
     };
@@ -47,7 +46,7 @@ const Cell = React.createClass({
           mode="lua"
           theme="monokai"
           tabSize={2}
-          onChange={onChange}
+          onChange={this.props.onCodeChange}
           onLoad={onLoad}
           name="UNIQUE_ID_OF_DIV"
           value={this.props.code}
@@ -67,7 +66,7 @@ const CellList = React.createClass({
   render: function() {
     return (
       <div style={{ paddingTop: '16px' }}>
-        <Cell code={this.props.cells[0].code} />
+        <Cell code={this.props.cells[0].code} onCodeChange={_.partial(this.props.changeCode, 1)} />
         {this.props.cells[0].output.map(MessageItem)}
       </div>
     );
@@ -78,5 +77,9 @@ module.exports = ReactRedux.connect(
   // Map store state to props
   (state) => ({
     cells: state.cellList.cells
+  }),
+
+  (dispatch) => ({
+    changeCode: _.flow(cellListActionCreators.changeCode, dispatch)
   })
 )(CellList);
