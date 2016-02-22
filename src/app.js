@@ -19,15 +19,7 @@ require('./config/routes').connect(app);
 // Set up the root route
 app.get('/', (req, res) => {
   const initalState = {
-    cellList: {
-      cells: [
-        {
-          id: 1,
-          code: serverState.code || 'display_html("Hello")',
-          output: serverState.messages
-        }
-      ]
-    }
+    cellList: serverState.cellList
   };
 
   // The HTML is pretty barebones, it just provides a mount point
