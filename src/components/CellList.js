@@ -35,6 +35,9 @@ const Cell = React.createClass({
         body: JSON.stringify({
           code: this.props.code
         })
+      }).then(() => {
+        // TODO: Don't do this, obviously.
+        location.reload();
       });
     };
 

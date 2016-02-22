@@ -21,7 +21,11 @@ app.get('/', (req, res) => {
   const initalState = {
     cellList: {
       cells: [
-        { id: 1, code: 'display_html("Hello")', output: serverState.messages }
+        {
+          id: 1,
+          code: serverState.code || 'display_html("Hello")',
+          output: serverState.messages
+        }
       ]
     }
   };
