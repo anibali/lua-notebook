@@ -63,16 +63,12 @@ const CellList = React.createClass({
   // Display name for the component (useful for debugging)
   displayName: 'CellList',
 
-  getInitialState: function() {
-    return { code: this.props.cells[0].code };
-  },
-
   // Describe how to render the component
   render: function() {
     return (
       <div style={{ paddingTop: '16px' }}>
-        <Cell code={this.state.code} />
-        {this.props.messages.map(MessageItem)}
+        <Cell code={this.props.cells[0].code} />
+        {this.props.cells[0].output.map(MessageItem)}
       </div>
     );
   }

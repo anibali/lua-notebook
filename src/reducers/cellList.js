@@ -1,7 +1,7 @@
 // The initial state is filled with some dummy data for debugging purposes
 const initialState = {
   cells: [
-    { id: 1, code: 'display_html("Hello")', output: '' }
+    { id: 1, code: 'display_html("Hello")', output: [] }
   ]
 };
 

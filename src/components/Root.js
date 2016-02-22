@@ -17,7 +17,7 @@ const Root = React.createClass({
   render: function() {
     return (
       <Provider store={this.props.store}>
-        <CellList messages={this.props.messages} />
+        <CellList />
       </Provider>
     );
   }

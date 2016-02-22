@@ -1,7 +1,8 @@
 const path = require('path');
 const express = require('express');
-const threads = require('threads');
 const bodyParser = require('body-parser');
+
+const serverState = require('./server-state');
 
 // Create a new Express app
 const app = express();
@@ -15,12 +16,14 @@ app.use('/assets', express.static(path.resolve(__dirname, '..', 'dist')));
 
 require('./config/routes').connect(app);
 
-const messages = [];
-
 // Set up the root route
 app.get('/', (req, res) => {
   const initalState = {
-    messages
+    cellList: {
+      cells: [
+        { id: 1, code: 'display_html("Hello")', output: serverState.messages }
+      ]
+    }
   };
 
   // The HTML is pretty barebones, it just provides a mount point
@@ -42,16 +45,6 @@ app.get('/', (req, res) => {
   // Respond with the HTML
   res.send(htmlContent);
 });
-
-const kernel = threads.spawn('src/kernel.js');
-
-kernel.on('message', (msg) => {
-  msg.id = messages.length + 1;
-  messages.push(msg);
-  // kernel.kill();
-});
-
-global.kernel = kernel;
 
 // Export the Express app
 module.exports = app;

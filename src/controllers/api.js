@@ -1,9 +1,11 @@
 const express = require('express');
 
+const serverState = require('../server-state');
+
 const router = express.Router();
 
 router.post('/eval', (req, res) => {
-  global.kernel.send({ type: 'eval', data: req.body.code });
+  serverState.kernel.send({ type: 'eval', data: req.body.code });
   res.send('OK.');
 });
 
