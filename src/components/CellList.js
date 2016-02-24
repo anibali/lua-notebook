@@ -22,6 +22,25 @@ const Cell = React.createClass({
   // Display name for the component (useful for debugging)
   displayName: 'Cell',
 
+  loadOutputFromServer: function() {
+    fetch('/api/output', {
+      method: 'get',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    })
+    .then((res) => res.json())
+    .then((json) => {
+      this.props.onOutputChange(json.output);
+    });
+  },
+
+  componentDidMount: function() {
+    this.loadOutputFromServer();
+    setInterval(this.loadOutputFromServer, 1000);
+  },
+
   render: function() {
     const onLoad = (editor) => {
       editor.setShowInvisibles(true);
@@ -37,14 +56,16 @@ const Cell = React.createClass({
         body: JSON.stringify({
           code: this.props.code
         })
-      }).then(() => {
-        // TODO: Don't do this, obviously.
-        location.reload();
       });
     };
 
     return (
       <div>
+        <div className="btn-toolbar" role="toolbar" aria-label="...">
+          <div className="btn-group" role="group">
+            <a className="btn btn-default" role="button" onClick={onClick}>Run</a>
+          </div>
+        </div>
         <AceEditor
           width="100%"
           fontSize={16}
@@ -57,7 +78,6 @@ const Cell = React.createClass({
           value={this.props.code}
           editorProps={{ $blockScrolling: true }}
         />
-        <a className="btn btn-primary" role="button" onClick={onClick}>Eval</a>
       </div>
     );
   }
@@ -71,7 +91,7 @@ const CellList = React.createClass({
   render: function() {
     return (
       <div style={{ paddingTop: '16px' }}>
-        <Cell code={this.props.cells[0].code} onCodeChange={_.partial(this.props.changeCode, 1)} />
+        <Cell code={this.props.cells[0].code} onCodeChange={_.partial(this.props.changeCode, 1)} onOutputChange={_.partial(this.props.changeOutput, 1)} />
         {this.props.cells[0].output.map(MessageItem)}
       </div>
     );
@@ -85,6 +105,7 @@ module.exports = ReactRedux.connect(
   }),
 
   (dispatch) => ({
-    changeCode: _.flow(cellListActionCreators.changeCode, dispatch)
+    changeCode: _.flow(cellListActionCreators.changeCode, dispatch),
+    changeOutput: _.flow(cellListActionCreators.changeOutput, dispatch)
   })
 )(CellList);

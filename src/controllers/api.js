@@ -15,4 +15,12 @@ router.post('/eval', (req, res) => {
   res.send('OK.');
 });
 
+router.get('/output', (req, res) => {
+  // TODO: Determine correct notebook/cell from params
+  const notebook = serverState.notebooks[0];
+  const cell = notebook.cells[0];
+
+  res.json({ output: cell.output });
+});
+
 module.exports = router;

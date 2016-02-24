@@ -1,6 +1,7 @@
 const _ = require('lodash');
 
 const CHANGE_CODE = Symbol('sconce/cellList/CHANGE_CODE');
+const CHANGE_OUTPUT = Symbol('sconce/cellList/CHANGE_OUTPUT');
 
 // The initial state is filled with some dummy data for debugging purposes
 const initialState = {
@@ -26,6 +27,16 @@ function reducer(state, action) {
       return _.assign({}, state, { cells });
     }
 
+    case CHANGE_OUTPUT: {
+      const cells = _.mapValues(state.cells, (cell) => {
+        if(cell.id === action.cellId) {
+          return _.assign({}, cell, { output: action.output });
+        }
+        return cell;
+      });
+      return _.assign({}, state, { cells });
+    }
+
     default: return state;
   }
 
@@ -34,5 +45,8 @@ function reducer(state, action) {
 
 reducer.changeCode = (cellId, code) =>
   ({ type: CHANGE_CODE, cellId, code });
+
+reducer.changeOutput = (cellId, output) =>
+  ({ type: CHANGE_OUTPUT, cellId, output });
 
 module.exports = reducer;
