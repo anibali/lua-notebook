@@ -1,6 +1,6 @@
 const ln = require('../build/Release/lua-node');
 
-const state = ln.new();
+const luaNodeState = ln.new();
 
 const main = (input, done) => {
   input = input || {};
@@ -9,11 +9,11 @@ const main = (input, done) => {
     done({ type: 'display_html', data: htmlString });
   };
 
-  ln.define_global_function(state, 'display_html', displayHtml);
+  ln.define_global_function(luaNodeState, 'display_html', displayHtml);
 
   switch(input.type) {
     case 'eval': {
-      const err = ln.eval(state, input.data);
+      const err = ln.eval(luaNodeState, input.data);
       if(err) {
         done({ type: 'error', data: err });
       }

@@ -19,7 +19,7 @@ require('./config/routes').connect(app);
 // Set up the root route
 app.get('/', (req, res) => {
   const initalState = {
-    cellList: serverState.cellList
+    cellList: { cells: serverState.notebooks[0].cells }
   };
 
   // The HTML is pretty barebones, it just provides a mount point

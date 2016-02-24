@@ -10,11 +10,13 @@ const AceEditor = require('react-ace');
 
 const cellListActionCreators = require('../reducers/cellList');
 
-const MessageItem = (m) => {
-  return (
-    <div className="well" key={m.id} dangerouslySetInnerHTML={{ __html: m.data }} />
-  );
-};
+const MessageItem = (m) => (
+  <div
+    className="well"
+    key={m.id}
+    dangerouslySetInnerHTML={{ __html: m.data }}
+  />
+);
 
 const Cell = React.createClass({
   // Display name for the component (useful for debugging)

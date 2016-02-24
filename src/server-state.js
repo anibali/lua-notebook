@@ -1,25 +1,34 @@
 const threads = require('threads');
-const kernel = threads.spawn('src/kernel.js');
+const _ = require('lodash');
 
-const state = {
-  cellList: {
-    cells: [
-      {
-        id: 1,
-        code: 'display_html("Hello")',
-        output: []
-      }
-    ]
-  },
-  kernel
+const startNewKernel = () => {
+  // NOTE: The kernel can be killed later with `kernel.kill()`
+  const kernel = threads.spawn('src/kernel.js');
+  return kernel;
 };
 
-const messages = [];
+const state = {
+  notebooks: [
+    {
+      id: 1,
+      kernel: startNewKernel(),
+      cells: [
+        {
+          id: 1,
+          code: 'display_html("Hello")',
+          output: []
+        }
+      ]
+    }
+  ],
+};
 
-kernel.on('message', (msg) => {
-  msg.id = state.cellList.cells[0].output.length + 1;
-  state.cellList.cells[0].output.push(msg);
-  // kernel.kill();
+_.forEach(state.notebooks, (notebook) => {
+  notebook.kernel.on('message', (msg) => {
+    // TODO: Find correct cell to update output for
+    msg.id = notebook.cells[0].output.length + 1;
+    notebook.cells[0].output.push(msg);
+  });
 });
 
 module.exports = state;

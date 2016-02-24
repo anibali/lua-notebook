@@ -20,9 +20,8 @@ function reducer(state, action) {
       const cells = _.mapValues(state.cells, (cell) => {
         if(cell.id === action.cellId) {
           return _.assign({}, cell, { code: action.code });
-        } else {
-          return cell;
         }
+        return cell;
       });
       return _.assign({}, state, { cells });
     }
@@ -33,8 +32,7 @@ function reducer(state, action) {
   throw new Error('Reducer switch statement should always return');
 }
 
-reducer.changeCode = (cellId, code) => {
-  return { type: CHANGE_CODE, cellId, code };
-}
+reducer.changeCode = (cellId, code) =>
+  ({ type: CHANGE_CODE, cellId, code });
 
 module.exports = reducer;
