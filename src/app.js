@@ -14,6 +14,10 @@ app.use(bodyParser.json());
 // <link> and <script> tags.
 app.use('/assets', express.static(path.resolve(__dirname, '..', 'dist')));
 
+// Serve up font-awesome fonts from vendor folder
+app.use('/assets/fonts', express.static(path.join(__dirname,
+        '..', 'vendor', 'font-awesome', 'fonts')));
+
 require('./config/routes').connect(app);
 
 // Set up the root route

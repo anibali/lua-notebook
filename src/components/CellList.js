@@ -46,7 +46,7 @@ const Cell = React.createClass({
       editor.setShowInvisibles(true);
     };
 
-    const onClick = () => {
+    const onClickRun = () => {
       fetch('/api/eval', {
         method: 'post',
         headers: {
@@ -59,11 +59,20 @@ const Cell = React.createClass({
       });
     };
 
+    const onClickKill = () => {
+      alert('TODO');
+    }
+
     return (
       <div>
         <div className="btn-toolbar" role="toolbar" aria-label="...">
           <div className="btn-group" role="group">
-            <a className="btn btn-default" role="button" onClick={onClick}>Run</a>
+            <a className="btn btn-default" role="button" onClick={onClickRun}>
+              <span className="fa fa-play" />
+            </a>
+            <a className="btn btn-danger" role="button" onClick={onClickKill}>
+              <span className="fa fa-ban" />
+            </a>
           </div>
         </div>
         <AceEditor
