@@ -30,7 +30,8 @@ const paths = {
   styles: 'src/styles/**/*.css',
   vendorStyles: [
     'vendor/font-awesome/css/font-awesome.css',
-    require.resolve('bootstrap/dist/css/bootstrap.css')
+    'vendor/darkly/bootstrap.min.css'
+    // require.resolve('bootstrap/dist/css/bootstrap.css')
   ]
 };
 

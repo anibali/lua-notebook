@@ -44,6 +44,7 @@ const Cell = React.createClass({
   render: function() {
     const onLoad = (editor) => {
       editor.setShowInvisibles(true);
+      editor.renderer.setScrollMargin(6, 6, 6, 6);
     };
 
     const onClickRun = () => {
